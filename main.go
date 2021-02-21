@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"crypto/sha256"
+	"blockchain-go/blockchain"
 	"fmt"
+	"strconv"
 )
 
-type BlockChain struct {
+/*type BlockChain struct {
 	blocks []*Block
 }
 
@@ -44,24 +44,24 @@ func Genesis() *Block{
 // Funcion para inicializar el BlockChain
 func InitBlockChain() *BlockChain{
 	return &BlockChain{[]*Block{Genesis()}}
-}
+}*/
 
+func main() {
+	chain := blockchain.InitBlockChain()
 
+	chain.AddBlock("Primer bloque despues del Genesis")
+	chain.AddBlock("Segundo bloque despues del Genesis")
+	chain.AddBlock("Tercer bloque despues del Genesis")
+	chain.AddBlock("Cuarto bloque despues del Genesis")
 
-
-
-
-func main(){
-	chain := InitBlockChain()
-
-	chain.AddBlock("Primer bloque después del genesis")
-	chain.AddBlock("Segundo bloque después del genesis")
-	chain.AddBlock("Tercer bloque después del genesis")
-	chain.AddBlock("Cuarto bloque después del genesis")
-
-	for _, block := range chain.blocks{
+	for   _, block := range chain.Blocks{
 		fmt.Printf("Hash previo => %x \n", block.PrevHash)
-		fmt.Printf("Data en el block => %s \n", block.Data)
-		fmt.Printf("Hash => %x \n \n", block.Hash)
+		fmt.Printf("Data en el bloque => %x \n", block.Data)
+		fmt.Printf("Hash => %x \n\n", block.Hash)
+
+		pow := blockchain.NewProof(block)
+		fmt.Printf("Pow =>  %s \n \n", strconv.FormatBool(pow.Validate()))
+
 	}
+
 }
