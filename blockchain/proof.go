@@ -22,7 +22,7 @@ import (
 // Los primeros bytes deben contener ceros
 
 // Cuando mayor es el difficulty mas complejo resultará
-const Difficulty = 6
+const Difficulty = 3
 
 func (b *Block) DeriveHash(){
 	info := bytes.Join([][]byte{b.Data, b.PrevHash}, []byte{})

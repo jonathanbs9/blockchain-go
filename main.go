@@ -57,7 +57,7 @@ func main() {
 	for   _, block := range chain.Blocks{
 		fmt.Printf("Hash previo => %x \n", block.PrevHash)
 		fmt.Printf("Data en el bloque => %x \n", block.Data)
-		fmt.Printf("Hash => %x \n\n", block.Hash)
+		fmt.Printf("Hash => %x \n", block.Hash)
 
 		pow := blockchain.NewProof(block)
 		fmt.Printf("Pow =>  %s \n \n", strconv.FormatBool(pow.Validate()))
