@@ -3,48 +3,54 @@ package main
 import (
 	"blockchain-go/blockchain"
 	"fmt"
+	"os"
+	"runtime"
 	"strconv"
+
+	"github.com/jonathanbs9/blockchain-go/blockchain"
 )
 
-/*type BlockChain struct {
-	blocks []*Block
+type CommandLine struct {
+	blockchain *blockchain.BlockChain
 }
 
-type Block struct {
-	Hash []byte
-	Data []byte
-	PrevHash []byte
+func (cli *CommandLine) printUsage() {
+	fmt.Println("Usage:")
+	fmt.Println(" add - block BLOCK_DATA - add a block to the chain")
+	fmt.Println(" print - Prints the blocks in the chain")
 }
 
-func (b *Block) DeriveHash() {
-	info := bytes.Join([][]byte{b.Data, b.PrevHash}, []byte{})
-	hash := sha256.Sum256(info)
-	b.Hash = hash[:]
+func (cli *CommandLine) validateArgs() {
+	if len(os.Args) < 2 {
+		cli.printUsage()
+		runtime.Goexit()
+	}
 }
 
-// Función para Crear un Block
-func CreateBlock(data string, prevHash []byte) *Block{
-	block := &Block{[]byte{}, []byte(data), prevHash}
-	block.DeriveHash()
-	return block
+func (cli *CommandLine) addBlock(data string) {
+	cli.blockchain.AddBlock(data)
+	fmt.Println("Bloque agregado!!! ")
 }
 
-// Función para Agregar un Block
-func (chain *BlockChain) AddBlock(data string){
-	prevBlock := chain.blocks[len(chain.blocks)-1]
-	new := CreateBlock(data, prevBlock.Hash)
-	chain.blocks = append(chain.blocks, new)
-}
+func (cli *CommandLine) printChain() {
+	iter := cli.blockchain.Iterator()
 
-// Función para crear un Block inicializador
-func Genesis() *Block{
-	return CreateBlock("Genesis", []byte{})
-}
+	for {
+		block := iter.Next()
 
-// Funcion para inicializar el BlockChain
-func InitBlockChain() *BlockChain{
-	return &BlockChain{[]*Block{Genesis()}}
-}*/
+		fmt.Printf("Hash previo => %x \n", block.PrevHash)
+		fmt.Printf("Data en el bloque => %x \n", block.Data)
+		fmt.Printf("Hash => %x \n", block.Hash)
+
+		pow := blockchain.NewProof(block)
+		fmt.Printf("Pow =>  %s \n \n", strconv.FormatBool(pow.Validate()))
+
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+
+}
 
 func main() {
 	chain := blockchain.InitBlockChain()
@@ -54,7 +60,7 @@ func main() {
 	chain.AddBlock("Tercer bloque despues del Genesis")
 	chain.AddBlock("Cuarto bloque despues del Genesis")
 
-	for   _, block := range chain.Blocks{
+	for _, block := range chain.Blocks {
 		fmt.Printf("Hash previo => %x \n", block.PrevHash)
 		fmt.Printf("Data en el bloque => %x \n", block.Data)
 		fmt.Printf("Hash => %x \n", block.Hash)
