@@ -1,18 +1,20 @@
 package blockchain
 
-type BlockChain struct {
-	Blocks []*Block
-}
+import (
+	"bytes"
+	"encoding/gob"
+	"log"
+)
 
 type Block struct {
-	Hash []byte
-	Data []byte
+	Hash     []byte
+	Data     []byte
 	PrevHash []byte
-	Nonce int
+	Nonce    int
 }
 
 // Creamos el bloque
-func CreateBlock( data string, prevHash []byte) *Block {
+func CreateBlock(data string, prevHash []byte) *Block {
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
 	pow := NewProof(block)
 	nonce, hash := pow.Run()
@@ -23,19 +25,36 @@ func CreateBlock( data string, prevHash []byte) *Block {
 	return block
 }
 
-// Agregamos un bloque a la cadena de bloques
-func (chain *BlockChain) AddBlock(data string){
-	prevBlock := chain.Blocks[len(chain.Blocks)-1]
-	new := CreateBlock(data, prevBlock.Hash)
-	chain.Blocks = append(chain.Blocks, new)
-}
-
 // Función Genesis => Crea el primer bloque
 func Genesis() *Block {
 	return CreateBlock("Genesis", []byte{})
 }
 
-// Función que inicializa la cadena de bloques (precisa del genesis)
-func InitBlockChain() *BlockChain{
-	return &BlockChain{[]*Block{Genesis()}}
+// Funciones Serialize y deserialize. Ya que BagerDB acepta Arrays de bytes
+// Serialize func
+func (b *Block) Serialize() []byte {
+	var res bytes.Buffer
+	encoder := gob.NewEncoder(&res)
+
+	err := encoder.Encode(b)
+	Handle(err)
+	return res.Bytes()
+}
+
+// Deserialize func
+func Deserialize(data []byte) *Block {
+	var block Block
+
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	err := decoder.Decode(&block)
+	Handle(err)
+
+	return &block
+}
+
+// Función Handle
+func Handle(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
 }
