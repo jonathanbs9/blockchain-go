@@ -24,19 +24,19 @@ import (
 // Cuando mayor es el difficulty mas complejo resultará
 const Difficulty = 3
 
-func (b *Block) DeriveHash(){
+func (b *Block) DeriveHash() {
 	info := bytes.Join([][]byte{b.Data, b.PrevHash}, []byte{})
-	hash:= sha256.Sum256(info)
+	hash := sha256.Sum256(info)
 	b.Hash = hash[:]
 }
 
 type ProofOfWork struct {
-	Block *Block
+	Block  *Block
 	Target *big.Int
 }
 
 func NewProof(b *Block) *ProofOfWork {
-	target:= big.NewInt(1)
+	target := big.NewInt(1)
 	target.Lsh(target, uint(256-Difficulty))
 
 	pow := &ProofOfWork{b, target}
@@ -44,16 +44,16 @@ func NewProof(b *Block) *ProofOfWork {
 	return pow
 }
 
-func (pow *ProofOfWork) InitData (nonce int) []byte  {
+func (pow *ProofOfWork) InitData(nonce int) []byte {
 	data := bytes.Join(
-			[][]byte{
-				pow.Block.PrevHash,
-				pow.Block.Data,
-				ToHex(int64(nonce)),
-				ToHex(int64(Difficulty)),
-			},
-			[]byte{},
-		)
+		[][]byte{
+			pow.Block.PrevHash,
+			pow.Block.HashTransactions(),
+			ToHex(int64(nonce)),
+			ToHex(int64(Difficulty)),
+		},
+		[]byte{},
+	)
 	return data
 }
 
@@ -61,18 +61,18 @@ func ToHex(num int64) []byte {
 	buff := new(bytes.Buffer)
 	err := binary.Write(buff, binary.BigEndian, num)
 	if err != nil {
-		log.Panic("Error al convertir num => ",err)
+		log.Panic("Error al convertir num => ", err)
 	}
 	return buff.Bytes()
 }
 
-func (pow *ProofOfWork) Run() (int, []byte){
+func (pow *ProofOfWork) Run() (int, []byte) {
 	var intHash big.Int
 	var hash [32]byte
 
 	nonce := 0
 
-	for nonce < math.MaxInt64{
+	for nonce < math.MaxInt64 {
 		data := pow.InitData(nonce)
 		hash = sha256.Sum256(data)
 
