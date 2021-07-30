@@ -2,12 +2,17 @@ package blockchain
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"runtime"
 
 	"github.com/dgraph-io/badger"
 )
 
 const (
-	dbPath = "./tmp/blocks"
+	dbPath      = "./tmp/blocks"
+	dbFile      = "./tmp/blocks/MANIFEST"
+	genesisData = "First Transaction from Genesis"
 )
 
 // Ahora con Badger va a almacenar el ultimo hash del ultimo bloque de cadena
@@ -23,30 +28,24 @@ type BlockChainIterator struct {
 	Database    *badger.DB
 }
 
-func (chain *BlockChain) Iterator() *BlockChainIterator {
-	iter := &BlockChainIterator{chain.LastHash, chain.Database}
-	return iter
-}
-
-func (iter *BlockChainIterator) Next() *Block {
-	var block *Block
-	err := iter.Database.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(iter.CurrentHash)
-		encodedBlock, err := item.Value()
-		block = Deserialize(encodedBlock)
-
-		return err
-	})
-	Handle(err)
-	iter.CurrentHash = block.PrevHash
-	return block
+func DBexist() bool {
+	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 // Función que inicializa la cadena de bloques (precisa del genesis)
-func InitBlockChain() *BlockChain {
+func InitBlockChain(address string) *BlockChain {
 	//return &BlockChain{[]*Block{Genesis()}}
 	var lastHash []byte
-	opts := badger.DefaultOptions
+
+	if DBexist() {
+		fmt.Println("Blockchain already exists")
+		runtime.Goexit()
+	}
+
+	opts := badger.DefaultOptions(dbPath)
 	// Donde la base de datos va a almacenar los keys y metedata
 	opts.Dir = dbPath
 	// Donde la base de datos va a almacenar todos los valores
@@ -60,12 +59,13 @@ func InitBlockChain() *BlockChain {
 		/  Si ya tiene, creamos una instancia nueva  de blockchain en memoria  y tenemos el lastHash del blockchain en el disk DB
 		/  y la pusheamos en la instancia de blockchain.
 		*/
-		/* Si no hay ninguna instancia de Blockhain en DB, creamos un blocke Genesis y lo almacenamos en la BD. Guardamos el hash del  bloque Genesis
+		/* Si no hay ninguna instancia de Blockhain en DB, creamos un bloque Genesis y lo almacenamos en la BD. Guardamos el hash del  bloque Genesis
 		   como el lastHash en BD y creamos una nueva instancia de  blockchain apuntando al bloque Genesis
 		*/
 		if _, err := txn.Get([]byte("lh")); err == badger.ErrKeyNotFound {
+			cbtx := CoinbaseTx(address, genesisData)
 			fmt.Println("No se encontró Blockchain")
-			genesis := Genesis()
+			genesis := Genesis(cbtx)
 			fmt.Println("Geneis probado!")
 			err = txn.Set(genesis.Hash, genesis.Serialize())
 			Handle(err)
@@ -75,15 +75,17 @@ func InitBlockChain() *BlockChain {
 
 			return err
 		} else {
+			// Si ya tenemos una DB y tiene un blockchain.
+			// Obtenemos el 'lastHash' del DB
 			item, err := txn.Get([]byte("lh"))
 			Handle(err)
-			lastHash, err = item.Value()
+			log.Println(item.Version())
 			return err
 		}
 	})
 
 	Handle(err)
-	// Creamos un nuevo blockchain en memoria
+	// Creamos un nuevo blockchain en memoria que contiene el lastHash y el puntero a la DB
 	blockchain := BlockChain{lastHash, db}
 	return &blockchain
 }
@@ -98,7 +100,8 @@ func (chain *BlockChain) AddBlock(data string) {
 	err := chain.Database.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("lh"))
 		Handle(err)
-		lastHash, err = item.Value()
+		//lastHash, err = item.Value()
+		log.Println(item.ValueSize())
 
 		return err
 	})
@@ -108,6 +111,7 @@ func (chain *BlockChain) AddBlock(data string) {
 	err = chain.Database.Update(func(txn *badger.Txn) error {
 		err := txn.Set(newBlock.Hash, newBlock.Serialize())
 		Handle(err)
+		// Seteamos el nuevo lastHash del nuevo Bloque creado
 		err = txn.Set([]byte("lh"), newBlock.Hash)
 
 		chain.LastHash = newBlock.Hash
@@ -115,4 +119,28 @@ func (chain *BlockChain) AddBlock(data string) {
 		return err
 	})
 	Handle(err)
+}
+
+// func Iterator
+func (chain *BlockChain) Iterator() *BlockChainIterator {
+	iter := &BlockChainIterator{chain.LastHash, chain.Database}
+	return iter
+}
+
+// func Next
+func (iter *BlockChainIterator) Next() *Block {
+	var block *Block
+	err := iter.Database.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(iter.CurrentHash)
+		//encodedBlock, err := item.Value()
+		log.Println(item.ValueSize())
+		//block = Deserialize(encodedBlock)
+
+		return err
+	})
+	Handle(err)
+
+	iter.CurrentHash = block.PrevHash
+
+	return block
 }

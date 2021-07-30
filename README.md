@@ -10,6 +10,10 @@
 
 ### 3 - BadgerDB 
 * We add persistence via BadgerDB and a Command Line interface to our blockchain application. 
+* Commands 
+    - go run main.go print
+    - go run main.go add -block "first block"
+    - go run main.go add -block "Send 10 BTC to Jona"
 ---
 
 ## Imports used
